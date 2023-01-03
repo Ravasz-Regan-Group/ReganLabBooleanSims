@@ -272,6 +272,123 @@ Environment_and_hits *extract_environment_and_hits(MODULAR_Boolean_Dynamics_PAIR
     return (EnvHit);
 }
 
+Environment_and_hits *extract_Hits(MODULAR_Boolean_Dynamics_PAIRED_TRACKER *PD, unsigned long int a_st, const char linenow[]){
+    char attr_list[200][5000];
+    char attr_list_condition[200][5000];
+    Environment_and_hits *EnvHit;
+    EnvHit=new Environment_and_hits((unsigned int)PD->Coupled->BRN->active_inputs->N);
+    
+    std::vector<std::string> word = Extract_String_Between_Delimiters_On_Same_Level(linenow, '(',')');
+    
+    char bla2[300];unsigned long int Nf=0;
+    
+    for(int j=1;j<=PD->Coupled->BRN->active_inputs->N;j++){
+        EnvHit->p_inputs[j]=PD->Coupled->Attractor_valleys[a_st]->Basin_Stored[PD->Coupled->Attractor_valleys[a_st]->Attractor[1]]->s[PD->Coupled->BRN->active_inputs->A[j]-1];
+    }
+    EnvHit->p_inputs[0]=1;
+    
+    EnvHit->BKR_Hits=new longint_ARRAY_pair();
+    EnvHit->Scan_Hits=new longint_ARRAY_pair();
+    
+    if(word.size()>=1){
+        sprintf(bla2,"%s",word[0].c_str());
+        Nf=separate_line_by_string(bla2,attr_list,", ",200);
+        if (Nf > 0){
+            // test which one:
+            unsigned long int Nf2=separate_line_by_string(attr_list[1],attr_list_condition," ",10);
+            for(unsigned int i=1;i<=Nf;i++){
+                unsigned long int Nf2=separate_line_by_string(attr_list[i],attr_list_condition," ",10);
+                if (Nf2 == 2){
+                        istringstream iss_in(attr_list_condition[1]);
+                        string hitname;
+                        iss_in >> hitname;
+                        unsigned int in_id = PD->Coupled->BRN->MDAT->get_node_ID(hitname.c_str());
+                        if (in_id>=1){
+                            if(!strcmp(attr_list_condition[2],"KD")) EnvHit->Scan_Hits->add_element(in_id, 0);
+                                else if(!strcmp(attr_list_condition[2],"OE")) EnvHit->Scan_Hits->add_element(in_id, 1);
+                                else{
+                                    printf("Knockout / overexpression scan condition %s for node %s in line %s is neigher KD for knockdown or OE for overexpression! \n\t(ignoring line; press enter to move to next instruction\n",attr_list_condition[2], hitname.c_str(),linenow); getchar(); return(NULL);
+                                }
+                            }
+                        else {
+                            printf("Knockout / overexpression condition %s in line %s is not a valid node in this model! \n\t(ignoring line; press enter to move to next instruction\n",hitname.c_str(),linenow); getchar(); return(NULL);
+                        }
+                }
+                else{
+                    printf("Knockout / overexpression conditions are not correcly specified in line %s\n\t Please specify the list of nodes that are knocked down/overexpressed in tandem at different points in time along a network state or trajectory:\t(Merlin KD, YAP OE) \n\t (ignoring line; press enter to move to next instruction\n",linenow); getchar(); return(NULL);
+                    }
+            }
+        }
+    }
+    else{
+        EnvHit->p_hits=new double[1];
+        EnvHit->p_hits[0]=0;
+    }
+    
+    if(word.size()==3){
+        sprintf(bla2,"%s",word[2].c_str());
+        Nf=separate_line_by_string(bla2,attr_list,", ",200);
+        if (Nf > 0){
+            unsigned long int Nf2=separate_line_by_string(attr_list[1],attr_list_condition," ",10);
+            if (Nf2 == 3) EnvHit->p_hits=new double[Nf+1];
+            for(unsigned int i=1;i<=Nf;i++){
+                unsigned long int Nf2=separate_line_by_string(attr_list[i],attr_list_condition," ",10);
+                if ((Nf2 == 3)&&(EnvHit->BKR_Hits->N==0)){
+                    istringstream iss_in(attr_list_condition[1]);
+                    string hitname;
+                    iss_in >> hitname;
+                    unsigned int in_id = PD->Coupled->BRN->MDAT->get_node_ID(hitname.c_str());
+                    if (in_id>=1){
+                        istringstream iss_p(attr_list_condition[3]);
+                        double hit_p = -1;
+                        iss_p >> hit_p;
+                        if ((iss_p.fail() == true) || (hit_p<0) || (hit_p>1)){
+                            printf("Knockout / overexpression condition %s for node %s in line %s cannot be read as a real number between 0 and 1! \n\t(ignoring line; press enter to move to next instruction\n",attr_list_condition[3], hitname.c_str(),linenow); getchar(); return(NULL);
+                        }
+                        else {
+                            if(!strcmp(attr_list_condition[2],"KD")) {EnvHit->BKR_Hits->add_element(in_id, 0);EnvHit->p_hits[i]=hit_p;}
+                            else if(!strcmp(attr_list_condition[2],"OE")) {EnvHit->BKR_Hits->add_element(in_id, 1);EnvHit->p_hits[i]=hit_p;}
+                            else{
+                                printf("Knockout / overexpression condition %s for node %s in line %s is neigher KD for knockdown or OE for overexpression! \n\t(ignoring line; press enter to move to next instruction\n",attr_list_condition[2], hitname.c_str(),linenow); getchar(); return(NULL);
+                            }
+                        }
+                    }
+                    else {
+                        printf("Knockout / overexpression condition %s in line %s is not a valid node in this model! \n\t(ignoring line; press enter to move to next instruction\n",hitname.c_str(),linenow); getchar(); return(NULL);
+                    }
+                }
+                else {
+                    if ((Nf2 == 2)&&(EnvHit->Scan_Hits->N==0)){
+                        istringstream iss_in(attr_list_condition[1]);
+                        string hitname;
+                        iss_in >> hitname;
+                        unsigned int in_id = PD->Coupled->BRN->MDAT->get_node_ID(hitname.c_str());
+                        if (in_id>=1){
+                            if(!strcmp(attr_list_condition[2],"KD")) EnvHit->Scan_Hits->add_element(in_id, 0);
+                            else if(!strcmp(attr_list_condition[2],"OE")) EnvHit->Scan_Hits->add_element(in_id, 1);
+                            else{
+                                printf("Knockout / overexpression scan condition %s for node %s in line %s is neigher KD for knockdown or OE for overexpression! \n\t(ignoring line; press enter to move to next instruction\n",attr_list_condition[2], hitname.c_str(),linenow); getchar(); return(NULL);
+                            }
+                        }
+                        else {
+                            printf("Knockout / overexpression condition %s in line %s is not a valid node in this model! \n\t(ignoring line; press enter to move to next instruction\n",hitname.c_str(),linenow); getchar(); return(NULL);
+                        }
+                    }
+                    else{
+                        printf("Knockout / overexpression conditions are not correcly specified in line %s\n\t Please specify one or both of the following:\n\t nodes that are partially knocked down or overexpressed at specific desired levels between 0 and 1:\t (SNAI1 KD 0.5, ZEB1 OE 0.2)\n\t list of nodes that are knocked down/overexpressed in tandem at levels scanned from 0 to 1:\t(Merlin KD, YAP OE) \n\t (ignoring line; press enter to move to next instruction\n",linenow); getchar(); return(NULL);
+                    }
+                }
+            }
+        }
+    }
+    else{
+        if(word.size()>3){
+            printf("Too many knockout / overexpression conditions in line %s\n\t Please specify one or both of the following:\n\t nodes that are partially knocked down or overexpressed at specific desired levels between 0 and 1:\t (SNAI1 KD 0.5, ZEB1 OE 0.2)\n\t list of nodes that are knocked down/overexpressed in tandem at levels scanned from 0 to 1:\t(Merlin KD, YAP OE) \n\t (ignoring line; press enter to move to next instruction\n",linenow); getchar(); return(NULL);
+        }
+    }
+    return (EnvHit);
+}
+
 longint_ARRAY_pair *extract_sequence_of_states(MODULAR_Boolean_Dynamics_PAIRED_TRACKER *PD,string inparantheses,bool *cyc){
     char attr_list[200][5000];
     char attr_list_condition[200][5000];
@@ -1535,6 +1652,124 @@ void RevTrans_run_stochastic_inputs_and_KO_OE_hits_STATS_SWEEP_on_attractor_list
             delete[] Statsnow;Statsnow=NULL;
         }
     }
+}
+
+void draw_timetrace_KO_OE_experiment_on_single_attractor_MOD(
+                                                             Environment_and_hits *EnvHit,
+                                                             int a_st,int a_st_k,
+                                                             MODULAR_Boolean_Dynamics_PAIRED_TRACKER *PD,
+                                                             double p_error,
+                                                             FILE *f,double y0,int W){
+     int id_GF=0,id_CDL=0, s_start_GF=0,s_start_CDL=0;
+     unsigned int *gothit;
+     
+     PD->Coupled->set_state(PD->Coupled->Attractor_valleys[a_st]->Basin_Stored[PD->Coupled->Attractor_valleys[a_st]->Attractor[1]]->s);
+     
+     id_GF=PD->BRN->MDAT->get_node_ID(GF_low_name);
+     id_CDL=PD->BRN->MDAT->get_node_ID(CD_low_name);
+     
+     if(id_GF>0) s_start_GF=PD->Coupled->s[id_GF-1];
+     if(id_CDL>0) s_start_CDL=PD->Coupled->s[id_CDL-1];
+
+     gothit = new unsigned int[EnvHit->Scan_Hits->N+1];
+    
+// Initial state"
+    for (int t=1;t<=maximum(40,2*PD->Coupled->Attractor_valleys[a_st]->N_a); t++) {
+        draw_timestep_MOD_RND_Hit(EnvHit->Scan_Hits,gothit,PD,t,f,y0,W);
+        PD->Coupled->synchronously_update_all_Gates_with_noise(p_error);
+
+    }
+    unsigned int t0=maximum(40,2*PD->Coupled->Attractor_valleys[a_st]->N_a);
+// knockdown at state  a_st_k along cycle
+     for (int t=t0+1;t<=t0+PD->Coupled->Attractor_valleys[a_st]->N_a; t++) {
+         if(t>=t0+a_st_k){
+             for(unsigned long int l=1;l<=EnvHit->Scan_Hits->N;l++){
+                 PD->Coupled->s[EnvHit->Scan_Hits->A[l]-1]=48+EnvHit->Scan_Hits->B[l];
+                 gothit[l]=1;
+             }
+             draw_timestep_MOD_RND_Hit(EnvHit->Scan_Hits,gothit,PD,t,f,y0,W);
+             PD->Coupled->synchronously_update_all_Gates_with_noise(p_error);
+             
+             if(id_GF>0) PD->Coupled->s[id_GF-1]=s_start_GF;
+             if(id_CDL>0) PD->Coupled->s[id_CDL-1]=s_start_CDL;
+         }
+         else{
+             draw_timestep_MOD_RND_Hit(EnvHit->Scan_Hits,gothit,PD,t,f,y0,W);
+             PD->Coupled->synchronously_update_all_Gates_with_noise(p_error);
+         }
+     }
+    t0+=PD->Coupled->Attractor_valleys[a_st]->N_a;
+// Followup with knockdown in place state"
+    for (int t=t0+1;t<=t0+maximum(40,2*PD->Coupled->Attractor_valleys[a_st]->N_a); t++) {
+        for(unsigned long int l=1;l<=EnvHit->Scan_Hits->N;l++){
+            PD->Coupled->s[EnvHit->Scan_Hits->A[l]-1]=48+EnvHit->Scan_Hits->B[l];
+            gothit[l]=1;
+        }
+        draw_timestep_MOD_RND_Hit(EnvHit->Scan_Hits,gothit,PD,t,f,y0,W);
+        PD->Coupled->synchronously_update_all_Gates_with_noise(p_error);
+        
+        if(id_GF>0) PD->Coupled->s[id_GF-1]=s_start_GF;
+        if(id_CDL>0) PD->Coupled->s[id_CDL-1]=s_start_CDL;
+    }
+ }
+
+
+void run_timed_full_KO_OE_experiment_on_single_attractor_MOD(
+                                                             Environment_and_hits *EnvHit,
+                                                             int a_st,int a_st_k,
+                                                             MODULAR_Boolean_Dynamics_PAIRED_TRACKER *PD,double p_error){
+    int W=8,YTOP,XTOP;
+    FILE *f;
+    char fn[400],fn1[400],fn2[300],fn22[300];
+    
+    PD->Coupled->set_state(PD->Coupled->Attractor_valleys[a_st]->Basin_Stored[PD->Coupled->Attractor_valleys[a_st]->Attractor[a_st_k]]->s);
+    // PD->Coupled->print_state();//getchar();
+    
+    //  long int DMAX=PD->Coupled->Attractor_valleys[a_st]->N_a+1;
+    int N_lines=PD->BRN->N+10;
+    YTOP=(W*N_lines+10*W)+5;
+    XTOP=2*650+5;
+    
+    if(EnvHit->Scan_Hits->N>0){
+        sprintf(fn2, "DRAW_Hits");
+        for (unsigned long int l=1; l<=EnvHit->Scan_Hits->N; l++) {
+            sprintf(fn2,"%s_%s-%ld",fn2,PD->BRN->MDAT->Node_name[EnvHit->Scan_Hits->A[l]],EnvHit->Scan_Hits->B[l]);
+        }
+    }
+    else sprintf(fn2,"WILDTYPE");
+    
+    sprintf(fn,"mkdir %s/%s/_EXP\n",MODEL_Directory_system,PD->BRN->path);
+    system(fn);
+    sprintf(fn,"mkdir %s/%s/_EXP/%s\n",MODEL_Directory_system,PD->BRN->path,fn2);
+    system(fn);
+    
+    if(EnvHit->Scan_Hits->N>0){
+        sprintf(fn22, "DRAW_Hits");
+        for (unsigned long int l=1; l<=EnvHit->Scan_Hits->N; l++) {
+            sprintf(fn22,"%s_%s-%ld",fn22,PD->BRN->MDAT->Node_name[EnvHit->Scan_Hits->A[l]],EnvHit->Scan_Hits->B[l]);
+        }
+    }
+    else sprintf(fn22,"WILDTYPE");
+
+    sprintf(fn,"%s/%s/_EXP/%s/%s_TIMED_A%d_As-%d__",MODEL_Directory,PD->BRN->path,fn2,fn22,a_st,a_st_k);
+    for (unsigned int i=1; i<=PD->Coupled->BRN->active_inputs->N; i++) {
+        sprintf(fn,"%s_%s-%.2lf",fn,PD->BRN->MDAT->Node_name[PD->Coupled->BRN->active_inputs->A[i]],EnvHit->p_inputs[i]);
+    }
+    sprintf(fn1,"%s.eps",fn);
+
+    printf("%s\n",fn1);
+    f=fopen(fn1,"w");
+    
+    EpsInit(f,-5,-5,XTOP,YTOP);
+    EpsSetFont(f,"Times-Roman",W);
+    draw_timetrace_KO_OE_experiment_on_single_attractor_MOD(EnvHit,a_st,a_st_k,PD,p_error,f,YTOP,W);
+   
+    //getchar();
+    sprintf(fn,"%s/%s/_EXP/%s/%s_TIMED_A%d_As-%d__",MODEL_Directory_system,PD->BRN->path,fn2,fn22,a_st,a_st_k);
+    for (unsigned int i=1; i<=PD->Coupled->BRN->active_inputs->N; i++) {
+        sprintf(fn,"%s_%s-%.2lf",fn,PD->BRN->MDAT->Node_name[PD->Coupled->BRN->active_inputs->A[i]],EnvHit->p_inputs[i]);
+    }
+    close_EPSDRAW_file(f,fn,2);
 }
 
 

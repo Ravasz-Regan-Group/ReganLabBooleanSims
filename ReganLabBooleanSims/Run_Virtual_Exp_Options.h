@@ -1443,5 +1443,25 @@ void run_CycleDrivingNetwork(MODULAR_Boolean_Dynamics_PAIRED_TRACKER *PD, const 
 }
 
 
+void run_Timed_Mutant_stable_phenotype(MODULAR_Boolean_Dynamics_PAIRED_TRACKER *PD, const char linenow[]){
+    longint_ARRAY *l;
+    Environment_and_hits *EnvHit;
+    
+    l=get_requested_cell_group(PD,linenow);
+    if (l!=NULL){
+        for(int j=1;j<=l->N;j++){
+            EnvHit=extract_Hits(PD,l->A[j],linenow);
+            if((EnvHit==NULL)||(EnvHit->p_inputs[0]<0)) return;
+                // this is set when the input is incorrent and virtual_exp line gets ignored
+            
+            for(int a_st_k=1;a_st_k<=PD->Coupled->Attractor_valleys[l->A[j]]->N_a;a_st_k++){
+               run_timed_full_KO_OE_experiment_on_single_attractor_MOD(EnvHit,(int)(l->A[j]), a_st_k,PD, 0);
+            }
+            delete EnvHit; EnvHit=NULL;
+        }
+    }
+    delete l;l=NULL;
+}
+
 
 #endif /* Run_Virtual_Exp_Options_h_h */

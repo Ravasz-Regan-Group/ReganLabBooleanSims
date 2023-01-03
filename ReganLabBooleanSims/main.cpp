@@ -174,6 +174,7 @@ void run_small_model(const char mname[]){
 #define MutantSummary_5D_333_22_Code 53
 
 #define CycleDrivingNetwork 54
+#define Timed_Mutant_stable_phenotype 55
 
 #define ModelErrors_Pulse1 103
 
@@ -221,7 +222,8 @@ unsigned int get_Exp_Code (string w){
     if (w == "CycleDrivingNetwork")  return CycleDrivingNetwork;
     
     if (w == "ModelErrors_Pulse1")  return ModelErrors_Pulse1;
-   
+    if (w == "Timed_Mutant_stable_phenotype")  return Timed_Mutant_stable_phenotype;
+
     return 0;
 }
 
@@ -428,7 +430,8 @@ void run_InSilico_Experimetnal_Package(const char  ModelName[], const char VexpN
                 case ModulePulseM_Code: run_ModulePulseM_Code(PD,GSE_line); break;
                     
                 case ModelErrors_Pulse1: run_ModelErrors_Pulse1_Code(PD,GSE_line); break;
-               
+                case Timed_Mutant_stable_phenotype: run_Timed_Mutant_stable_phenotype(PD,GSE_line); break;
+
                 default: break;
             }
          //   printf("Line %s DONE\n",GSE_line); getchar();
@@ -442,8 +445,8 @@ int main (int argc, const char * argv[])
 {
     init_random(0); setcolors_PAJEK();
    
-    //  run_InSilico_Experimetnal_Package("EMT_Mechanosensing", "VirtualExp_1.txt");
-     run_InSilico_Experimetnal_Package("EMT_Mechanosensing_TGFbeta", "VirtualExp_1.txt");
+      run_InSilico_Experimetnal_Package("EMT_Mechanosensing2", "VirtualExp_1.txt");
+    // run_InSilico_Experimetnal_Package("EMT_Mechanosensing_TGFbeta", "VirtualExp_1.txt");
   
     return 0;
 }
