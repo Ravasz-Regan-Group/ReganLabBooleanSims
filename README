@@ -1,0 +1,33 @@
+# ReganLabBooleanSims
+
+ReganLabBooleanSims is a Xcode project written in C++ by the Ravasz Regan lab to run Boolean modeling simulations.
+
+## Installation
+
+Download from Github and use with Xcode, in conjunciton with the Haskell command line package named dynmod
+
+## Usage
+
+-- create a Models directory for all models used with ReganLabBooleanSims
+
+-- at the top of the Xcode project's "main.cpp", use the #define commands to specify:
+      * username (e.g., #define whoamI  "eregan")
+      * CODE_Directory (location of the X-code project, with complete path)
+      * MODEL_Directory (location of all models with complete path, not the specific model you wish to work with)
+      * MODEL_Directory_system -- same as above, except if there are spaces in the path, they need to be escaped with \\
+
+-- Model files in .dmms format can be downloaded from the publication sites of the manuscrtipt "Boolean modeling of mechanosensitive Epithelial to Mesenchymal Transition and its reversal", 
+    including https://www.biorxiv.org/content/10.1101/2022.08.29.505701v1.article-info
+
+-- move a model file such as "model_example.dmms" file into a directory with the same name, created inside the models directory above. 
+      E.g., Models/model_example/model_example.dmms
+
+-- use dynmod to parse .dmms models and generate the files needed by ReganLabBooleanSims to run:
+    dynmod -t -e model_example.dmms
+     
+-- in the folder of the model you wish to work with, create a virtual experiment text file containing the simulations you wish to run (see manuscript)
+-- in the folder of the model you wish to work with,create a file named "VirtualExp_Phenotypes_for_STATS.txt" (see manusctipt)
+
+-- at the bottom of "main.cpp", specify the name of the model and the name of the virtual experiment file. 
+
+-- run Xcode
